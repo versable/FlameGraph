@@ -754,12 +754,7 @@ my $inc = <<INC;
 		matchedtxt = document.getElementById("matched");
 		svg = document.getElementsByTagName("svg")[0];
 		searching = 0;
-		var params = {};
-		var paramsarr = window.location.search.substr(1).split('&');
-		for (var i = 0; i < paramsarr.length; ++i) {
-			var tmp = paramsarr[i].split("=");
-			params[tmp[0]]  = tmp[1];
-		}
+		var params = get_params();
 		if (params.y && params.x)
 			zoom(find_group(document.querySelector('[y="' + params.y + '"][x="' + params.x + '"]')));
 	}
@@ -775,17 +770,19 @@ my $inc = <<INC;
 			zoom(target);
 			var el = target.querySelector("rect");
 			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
-				var params = {
-					"y": el.attributes.y.value,
-					"x": el.attributes._orig_x.value ?
+				var params = get_params()
+				params.y = el.attributes.y.value;
+				params.x = el.attributes._orig_x.value ?
 						el.attributes._orig_x.value :
-						el.attributes.x.value
-				};
-				history.replaceState(null, null, "?y=" + params.y + "&x=" + params.x);
+						el.attributes.x.value;
+				history.replaceState(null, null, parse_params(params));
 			}
 		}
 		else if (e.target.id == "unzoom") {
-			history.replaceState(null, null, "?");
+			var params = get_params();
+			if (params.x) delete params.x;
+			if (params.y) delete params.y;
+			history.replaceState(null, null, parse_params(params));
 			unzoom();
 		}
 		else if (e.target.id == "search") search_prompt();
@@ -813,6 +810,25 @@ my $inc = <<INC;
 	}, false)
 
 	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = tmp[1];
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		return uri;
+	}
 	function find_child(node, selector) {
 		var children = node.querySelectorAll(selector);
 		if (children.length) return children[0];
