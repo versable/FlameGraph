@@ -196,16 +196,10 @@ my $depthmax = 0;
 my %Events;
 my %nameattr;
 
-if ($flamechart && $titletext eq "") {
-	$titletext = "Flame Chart";
-}
-
 if ($titletext eq "") {
-	unless ($inverted) {
-		$titletext = $titledefault;
-	} else {
-		$titletext = $titleinverted;
-	}
+	$titletext = $flamechart ?
+		"Flame Chart" :
+		$inverted ? $titleinverted : $titledefault;
 }
 
 if ($nameattrfile) {
@@ -215,7 +209,7 @@ if ($nameattrfile) {
 	while (<$attrfh>) {
 		chomp;
 		my ($funcname, $attrstr) = split /\t/, $_, 2;
-		die "Invalid format in $nameattrfile" unless defined $attrstr;
+		die "Invalid format in $nameattrfile" if !$attrstr;
 		$nameattr{$funcname} = { map { split /=/, $_, 2 } split /\t/, $attrstr };
 	}
 }
@@ -629,7 +623,7 @@ foreach (@SortedData) {
 	# process: folded_stack count
 	# eg: func_a;func_b;func_c 31
 	my ($stack, $samples) = (/$regex/);
-	unless (defined $samples and defined $stack) {
+	if (!$samples && !$stack) {
 		++$ignored;
 		next;
 	}
@@ -669,7 +663,7 @@ foreach (@SortedData) {
 flow($last, [], $time, $delta);
 
 warn "Ignored $ignored lines with invalid format\n" if $ignored;
-unless ($time) {
+if (!$time) {
 	warn "ERROR: No stack counts found\n";
 	my $im = SVG->new();
 	# emit an error message SVG, for tools automating flamegraph use
@@ -1056,9 +1050,7 @@ $im->stringTTF("unzoom", $xpad, $fontsize * 2, "Reset Zoom", 'class="hide"');
 $im->stringTTF("search", $imagewidth - $xpad - 100, $fontsize * 2, "Search");
 $im->stringTTF("matched", $imagewidth - $xpad - 100, $imageheight - ($ypad2 / 2), " ");
 
-if ($palette) {
-	read_palette();
-}
+read_palette() if ($palette);
 
 # draw frames
 $im->group_start({id => "frames"});
@@ -1072,12 +1064,12 @@ while (my ($id, $node) = each %Node) {
 	my $x1 = $xpad + $stime * $widthpertime;
 	my $x2 = $xpad + $etime * $widthpertime;
 	my ($y1, $y2);
-	unless ($inverted) {
-		$y1 = $imageheight - $ypad2 - ($depth + 1) * $frameheight + $framepad;
-		$y2 = $imageheight - $ypad2 - $depth * $frameheight;
-	} else {
+	if ($inverted) {
 		$y1 = $ypad1 + $depth * $frameheight;
 		$y2 = $ypad1 + ($depth + 1) * $frameheight - $framepad;
+	} else {
+		$y1 = $imageheight - $ypad2 - ($depth + 1) * $frameheight + $framepad;
+		$y2 = $imageheight - $ypad2 - $depth * $frameheight;
 	}
 
 	my $samples = sprintf "%.0f", ($etime - $stime) * $factor;
@@ -1095,19 +1087,19 @@ while (my ($id, $node) = each %Node) {
 		$escaped_func =~ s/</&lt;/g;
 		$escaped_func =~ s/>/&gt;/g;
 		$escaped_func =~ s/"/&quot;/g;
-		$escaped_func =~ s/_\[[kwij]\]$//;	# strip any annotation
-		unless (defined $delta) {
-			$info = "$escaped_func ($samples_txt $countname, $pct%)";
-		} else {
+		$escaped_func =~ s/_\[[kwij]\]$//; # strip any annotation
+		if (defined $delta) {
 			my $d = $negate ? -$delta : $delta;
 			my $deltapct = sprintf "%.2f", ((100 * $d) / ($timemax * $factor));
 			$deltapct = $d > 0 ? "+$deltapct" : $deltapct;
 			$info = "$escaped_func ($samples_txt $countname, $pct%; $deltapct%)";
+		} else {
+			$info = "$escaped_func ($samples_txt $countname, $pct%)";
 		}
 	}
 
 	my $nameattr = { %{ $nameattr{$func}||{} } }; # shallow clone
-	$nameattr->{title}       ||= $info;
+	$nameattr->{title} ||= $info;
 	$im->group_start($nameattr);
 
 	my $color;
@@ -1127,7 +1119,7 @@ while (my ($id, $node) = each %Node) {
 	my $chars = int( ($x2 - $x1) / ($fontsize * $fontwidth));
 	my $text = "";
 	if ($chars >= 3) { # room for one char plus two dots
-		$func =~ s/_\[[kwij]\]$//;	# strip any annotation
+		$func =~ s/_\[[kwij]\]$//; # strip any annotation
 		$text = substr $func, 0, $chars;
 		substr($text, -2, 2) = ".." if $chars < length $func;
 		$text =~ s/&/&amp;/g;
@@ -1142,8 +1134,6 @@ $im->group_end();
 
 print $im->svg;
 
-if ($palette) {
-	write_palette();
-}
+write_palette() if ($palette);
 
 # vim: ts=8 sts=8 sw=8 noexpandtab
