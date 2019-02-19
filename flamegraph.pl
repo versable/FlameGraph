@@ -99,32 +99,32 @@ use open qw(:std :utf8);
 # tunables
 my $encoding;
 my $fonttype = "Verdana";
-my $imagewidth = 1200;          # max width, pixels
-my $frameheight = 16;           # max height is dynamic
-my $fontsize = 12;              # base text size
-my $fontwidth = 0.59;           # avg width relative to fontsize
-my $minwidth = 0.1;             # min function width, pixels
-my $nametype = "Function:";     # what are the names in the data?
-my $countname = "samples";      # what are the counts in the data?
-my $colors = "hot";             # color theme
-my $bgcolors = "";              # background color theme
-my $nameattrfile;               # file holding function attributes
-my $timemax;                    # (override the) sum of the counts
-my $factor = 1;                 # factor to scale counts by
-my $hash = 0;                   # color by function name
-my $palette = 0;                # if we use consistent palettes (default off)
-my %palette_map;                # palette map hash
-my $pal_file = "palette.map";   # palette map file name
-my $stackreverse = 0;           # reverse stack order, switching merge end
-my $inverted = 0;               # icicle graph
-my $flamechart = 0;             # produce a flame chart (sort by time, do not merge stacks)
-my $negate = 0;                 # switch differential hues
-my $titletext = "";             # centered heading
-my $titledefault = "Flame Graph";	# overwritten by --title
-my $titleinverted = "Icicle Graph";	#   "    "
-my $searchcolor = "rgb(230,0,230)";	# color for search highlighting
-my $notestext = "";		# embedded notes in SVG
-my $subtitletext = "";		# second level title (optional)
+my $imagewidth = 1200;              # max width, pixels
+my $frameheight = 16;               # max height is dynamic
+my $fontsize = 12;                  # base text size
+my $fontwidth = 0.59;               # avg width relative to fontsize
+my $minwidth = 0.1;                 # min function width, pixels
+my $nametype = "Function:";         # what are the names in the data?
+my $countname = "samples";          # what are the counts in the data?
+my $colors = "hot";                 # color theme
+my $bgcolors = "";                  # background color theme
+my $nameattrfile;                   # file holding function attributes
+my $timemax;                        # (override the) sum of the counts
+my $factor = 1;                     # factor to scale counts by
+my $hash = 0;                       # color by function name
+my $palette = 0;                    # if we use consistent palettes (default off)
+my %palette_map;                    # palette map hash
+my $pal_file = "palette.map";       # palette map file name
+my $stackreverse = 0;               # reverse stack order, switching merge end
+my $inverted = 0;                   # icicle graph
+my $flamechart = 0;                 # produce a flame chart (sort by time, do not merge stacks)
+my $negate = 0;                     # switch differential hues
+my $titletext = "";                 # centered heading
+my $titledefault = "Flame Graph";   # overwritten by --title
+my $titleinverted = "Icicle Graph"; #   "    "
+my $searchcolor = "rgb(230,0,230)"; # color for search highlighting
+my $notestext = "";                 # embedded notes in SVG
+my $subtitletext = "";              # second level title (optional)
 my $help = 0;
 
 sub usage {
