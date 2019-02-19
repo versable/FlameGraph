@@ -599,43 +599,36 @@ my $last = [];
 my $time = 0;
 my $delta = undef;
 my $ignored = 0;
-my $line;
 my $maxdelta = 1;
+my $regex = qr/^(.*)\s+?(\d+(?:\.\d*)?)$/;
 
 # reverse if needed
 foreach (<>) {
 	chomp;
-	$line = $_;
-	if ($stackreverse) {
-		# there may be an extra samples column for differentials
-		# XXX todo: redo these REs as one. It's repeated below.
-		my($stack, $samples) = (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
-		my $samples2 = undef;
-		if ($stack =~ /^(.*)\s+?(\d+(?:\.\d*)?)$/) {
-			$samples2 = $samples;
-			($stack, $samples) = $stack =~ (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
-			unshift @Data, join(";", reverse split(";", $stack)) . " $samples $samples2";
-		} else {
-			unshift @Data, join(";", reverse split(";", $stack)) . " $samples";
-		}
-	} else {
-		unshift @Data, $line;
+	if (!$stackreverse) {
+		unshift @Data, $_;
+		next;
 	}
+	# there may be an extra samples column for differentials
+	my ($stack, $samples) = (/$regex/);
+	if ($stack !~ /$regex/) {
+		unshift @Data, join(";", reverse split(";", $stack)) . " $samples";
+		next;
+	}
+	my $samples2 = $samples;
+	($stack, $samples) = $stack =~ (/$regex/);
+	unshift @Data, join(";", reverse split(";", $stack)) . " $samples $samples2";
 }
 
-if ($flamechart) {
-	# In flame chart mode, just reverse the data so time moves from left to right.
-	@SortedData = reverse @Data;
-} else {
-	@SortedData = sort @Data;
-}
+# In flame chart mode, just reverse the data so time moves from left to right.
+@SortedData = $flamechart ? reverse @Data : sort @Data;
 
 # process and merge frames
 foreach (@SortedData) {
 	chomp;
 	# process: folded_stack count
 	# eg: func_a;func_b;func_c 31
-	my ($stack, $samples) = (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
+	my ($stack, $samples) = (/$regex/);
 	unless (defined $samples and defined $stack) {
 		++$ignored;
 		next;
@@ -643,9 +636,9 @@ foreach (@SortedData) {
 
 	# there may be an extra samples column for differentials:
 	my $samples2 = undef;
-	if ($stack =~ /^(.*)\s+?(\d+(?:\.\d*)?)$/) {
+	if ($stack =~ /$regex/) {
 		$samples2 = $samples;
-		($stack, $samples) = $stack =~ (/^(.*)\s+?(\d+(?:\.\d*)?)$/);
+		($stack, $samples) = $stack =~ (/$regex/);
 	}
 	$delta = undef;
 	if (defined $samples2) {
@@ -671,11 +664,7 @@ foreach (@SortedData) {
 	# merge frames and populate %Node:
 	$last = flow($last, [ '', split ";", $stack ], $time, $delta);
 
-	if (defined $samples2) {
-		$time += $samples2;
-	} else {
-		$time += $samples;
-	}
+	$time += $samples2 // $samples;
 }
 flow($last, [], $time, $delta);
 
